@@ -4,7 +4,7 @@
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-blue)
 ![Versão](https://img.shields.io/badge/versão-1.0-green)
-![Banco](https://img.shields.io/badge/banco-PostgreSQL-316192)
+![Banco](https://img.shields.io/badge/banco-MySQL-4479A1)
 
 ---
 
@@ -42,10 +42,11 @@ Base de clientes interestadual com **UF de origem obrigatória**, histórico com
 ## Tecnologias
 
 ### Banco de dados
-- PostgreSQL
-- Particionamento de tabelas por UF e por data
+- MySQL 8.0+
+- Particionamento de tabelas por UF e por data (`PARTITION BY LIST` e `RANGE`)
 - Índices compostos para buscas regionais
-- Criptografia AES-256 em dados sensíveis
+- Criptografia AES-256 via `AES_ENCRYPT()` em dados sensíveis
+- Engine InnoDB (suporte a transações e chaves estrangeiras)
 
 ### Back-end
 - Node.js ou Python (a definir na Sessão 2)
@@ -84,11 +85,11 @@ luxe_voyage/
 
 ### Estratégias de particionamento
 
-| Tabela | Critério | Motivo |
-|---|---|---|
-| `clientes` | UF de origem | Consultas regionais não varrem o banco inteiro |
-| `pacotes` | Estado/destino | Filtros por região sem full scan |
-| `interacoes` | Mês/ano | Histórico cresce indefinidamente; acesso recente é mais frequente |
+| Tabela | Critério | Tipo MySQL | Motivo |
+|---|---|---|---|
+| `clientes` | UF de origem | `PARTITION BY LIST` | Consultas regionais não varrem o banco inteiro |
+| `pacotes` | Estado/destino | `PARTITION BY LIST` | Filtros por região sem full scan |
+| `interacoes` | Mês/ano | `PARTITION BY RANGE` | Histórico cresce indefinidamente; acesso recente é mais frequente |
 
 ---
 
