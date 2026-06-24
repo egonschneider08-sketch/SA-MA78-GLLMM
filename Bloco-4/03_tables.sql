@@ -27,3 +27,12 @@ CREATE TABLE Item_Cotacao (
     FOREIGN KEY (id_cotacao) REFERENCES Cotacao_Personalizadas(id_cotacao),
     FOREIGN KEY (id_modulo) REFERENCES Modulos_Pacote(id_modulo)
 );
+
+CREATE TABLE Propostas_Comerciais (
+    id_proposta INT AUTO_INCREMENT PRIMARY KEY,
+    id_cotacao INT NOT NULL,
+    versao INT NOT NULL DEFAULT 1,
+    status VARCHAR(50) NOT NULL,
+    UNIQUE (id_cotacao, versao),
+    FOREIGN KEY (id_cotacao) REFERENCES Cotacao_Personalizadas(id_cotacao)
+);
