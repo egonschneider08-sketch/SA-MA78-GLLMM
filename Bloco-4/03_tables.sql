@@ -36,3 +36,13 @@ CREATE TABLE Propostas_Comerciais (
     UNIQUE (id_cotacao, versao),
     FOREIGN KEY (id_cotacao) REFERENCES Cotacao_Personalizadas(id_cotacao)
 );
+
+CREATE TABLE Contrato_Digital (
+    id_contrato INT AUTO_INCREMENT PRIMARY KEY,
+    id_proposta INT NOT NULL UNIQUE,
+    timestamp_aceite TIMESTAMP NOT NULL,
+    ip_aceite VARCHAR(45) NOT NULL,
+    hash_integridade VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Assinado',
+    FOREIGN KEY (id_proposta) REFERENCES Propostas_Comerciais(id_proposta)
+);
