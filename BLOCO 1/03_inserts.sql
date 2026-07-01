@@ -35,7 +35,7 @@ VALUES
 ('TO', 'Tocantins', 'Norte', 'America/Araguaina');
 
 INSERT INTO Municipio (id_estado, nome, categoria) VALUES
--- SP (id_estado: 25 no script anterior, mas usando a sequência do seu modelo de 1 a 27)
+-- SP (id_estado: 25)
 (25, 'São Paulo', 'Capital'),
 (25, 'Campinas', 'Interior'),
 (25, 'Santos', 'Litoral'),
