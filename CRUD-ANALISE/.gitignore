@@ -1,0 +1,4 @@
+# não versionar credenciais / cache
+__pycache__/
+*.pyc
+.env
