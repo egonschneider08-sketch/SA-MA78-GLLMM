@@ -258,6 +258,15 @@ def rodar_analise():
         print(f"\n❌ Erro ao rodar a análise de dados: {e}")
 
 
+def enviar_relatorio_por_email():
+    """Roda a análise (se preciso) e envia CSVs + gráficos por e-mail ao supervisor."""
+    try:
+        from analise.email_relatorio import enviar_relatorio_email
+        enviar_relatorio_email()
+    except Exception as e:
+        print(f"\n❌ Erro ao enviar relatório por e-mail: {e}")
+
+
 def menu_principal():
     while True:
         print("\n############################################")
@@ -266,6 +275,7 @@ def menu_principal():
         print("  1. Menu CRUD (terminal)")
         print("  2. Abrir site (Streamlit)")
         print("  3. Rodar análise de dados (gráficos + CSVs)")
+        print("  4. Enviar relatório por e-mail (CSV + PNG) ao supervisor")
         print("  0. Sair")
         escolha = input("Escolha uma opção: ").strip()
 
@@ -278,6 +288,9 @@ def menu_principal():
             abrir_site()
         elif escolha == "3":
             rodar_analise()
+            pausa()
+        elif escolha == "4":
+            enviar_relatorio_por_email()
             pausa()
         else:
             print("Opção inválida.")
