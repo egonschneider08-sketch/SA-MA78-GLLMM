@@ -20,8 +20,11 @@ sem precisar tocar em nenhum arquivo de front-end.
 """
 import sys
 import pathlib
+import decimal
+import datetime
 
 from flask import Flask, jsonify, request, send_from_directory
+from flask.json.provider import DefaultJSONProvider
 
 # --- bootstrap de caminho (igual ao main.py) --------------------------------
 _RAIZ_PROJETO = pathlib.Path(__file__).resolve().parent.parent
@@ -35,7 +38,41 @@ from registro import REGISTRO            # noqa: E402
 
 _FRONTEND_WEB = _RAIZ_PROJETO / "FRONTEND" / "web"
 
+
+# ---------------------------------------------------------------------------
+# Serialização JSON customizada.
+#
+# O conector do MySQL devolve tipos Python que o Flask NÃO sabe transformar
+# em JSON por padrão:
+#   - colunas DECIMAL/NUMERIC (valor_total, valor_estimado, ...) viram
+#     decimal.Decimal
+#   - colunas DATE/DATETIME/TIMESTAMP viram datetime.date / datetime.datetime
+#   - colunas TIME viram datetime.timedelta
+#
+# Sem isso, qualquer tabela com esse tipo de coluna quebra (erro 500) ou
+# devolve o registro incompleto/mal formatado pro front. Este provider
+# resolve isso na raiz, pra qualquer endpoint da API.
+# ---------------------------------------------------------------------------
+class JSONProviderLuxeVoyage(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            # número puro (o front formata como moeda/percentual conforme a coluna)
+            return float(obj)
+        if isinstance(obj, (datetime.datetime, datetime.date, datetime.time)):
+            return obj.isoformat()
+        if isinstance(obj, datetime.timedelta):
+            return str(obj)
+        if isinstance(obj, (bytes, bytearray)):
+            # colunas VARBINARY/BLOB (ex.: Cliente.*_criptografado). O conteúdo é
+            # binário/criptografado, então não faz sentido decodificar como texto —
+            # mostramos em hexadecimal, igual a um cliente SQL, só pra não quebrar o JSON.
+            return "0x" + bytes(obj).hex()
+        return super().default(obj)
+
+
 app = Flask(__name__, static_folder=str(_FRONTEND_WEB), static_url_path="")
+app.json_provider_class = JSONProviderLuxeVoyage
+app.json = app.json_provider_class(app)
 
 
 # ---------------------------------------------------------------------------

@@ -337,10 +337,50 @@
       btn.addEventListener("click", () => confirmarExclusao(btn.dataset.excluir)));
   }
 
+  // Colunas monetárias (mas NÃO "numero_parcela"/"total_parcelas", que são contagens)
+  const RE_MONEY = /(valor|preco|preço)/i;
+  // Colunas booleanas conhecidas do modelo (0/1 vindos do MySQL)
+  const RE_BOOLEAN_COL = /^(obrigatorio|ativo|confirmado)$/i;
+  // Data (YYYY-MM-DD) ou data+hora ISO (YYYY-MM-DDTHH:MM:SS / "YYYY-MM-DD HH:MM:SS")
+  const RE_DATA_ISO = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2})?)?/;
+  // VARBINARY/BLOB (ex.: colunas *_criptografado) — o backend serializa como "0x...hex"
+  const RE_BINARIO_HEX = /^0x[0-9a-f]+$/i;
+
   function formatarCelula(coluna, valor) {
     if (valor === null || valor === undefined || valor === "") return `<span style="color:var(--ink-faint)">—</span>`;
+
     if (/status/i.test(coluna)) return badgeStatus(String(valor));
-    return escapeHtml(String(valor));
+
+    if (typeof valor === "string" && RE_BINARIO_HEX.test(valor)) {
+      const bytesTotal = (valor.length - 2) / 2;
+      return `<span class="badge badge-blue" title="${escapeHtml(valor)}">🔒 binário (${bytesTotal}B)</span>`;
+    }
+
+    if (RE_BOOLEAN_COL.test(coluna) && (valor === 0 || valor === 1 || valor === "0" || valor === "1")) {
+      const sim = Number(valor) === 1;
+      return `<span class="badge ${sim ? "badge-green" : "badge-red"}">${sim ? "Sim" : "Não"}</span>`;
+    }
+
+    if (RE_MONEY.test(coluna) && !isNaN(parseFloat(valor)) && isFinite(valor)) {
+      const numero = Number(valor);
+      return `<span title="${escapeHtml(String(valor))}">${numero.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>`;
+    }
+
+    if (typeof valor === "string" && RE_DATA_ISO.test(valor)) {
+      const temHora = /\d{2}:\d{2}/.test(valor);
+      const d = new Date(valor.replace(" ", "T"));
+      if (!isNaN(d.getTime())) {
+        const formatado = temHora
+          ? d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+          : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+        return `<span title="${escapeHtml(valor)}">${formatado}</span>`;
+      }
+    }
+
+    const texto = String(valor);
+    // título com o valor completo: colunas de texto longo (comentários, endereços, nomes)
+    // ficam truncadas com "…" no CSS, mas o valor inteiro aparece ao passar o mouse.
+    return `<span title="${escapeHtml(texto)}">${escapeHtml(texto)}</span>`;
   }
 
   function badgeStatus(valor) {
@@ -396,13 +436,25 @@
           <label>${escapeHtml(info.pk)}</label>
           <input type="text" value="${escapeHtml(String(valoresAtuais[info.pk] ?? id))}" disabled>
         </div>` : ""}
-      ${info.cols.map((c) => `
+      ${info.cols.map((c) => {
+        const valorAtual = valoresAtuais[c];
+        const ehBinario = modo === "editar" && typeof valorAtual === "string" && RE_BINARIO_HEX.test(valorAtual);
+        if (ehBinario) {
+          return `
+            <div class="field">
+              <label for="f-${c}">${escapeHtml(c)}</label>
+              <input type="text" id="f-${c}" name="${escapeHtml(c)}" value="🔒 dado binário/criptografado" disabled data-binario="1">
+              <span class="hint">Esse campo guarda um valor binário criptografado e não pode ser editado por aqui.</span>
+            </div>`;
+        }
+        return `
         <div class="field">
           <label for="f-${c}">${escapeHtml(c)}</label>
           <input type="text" id="f-${c}" name="${escapeHtml(c)}"
-                 value="${escapeHtml(valoresAtuais[c] !== undefined && valoresAtuais[c] !== null ? String(valoresAtuais[c]) : "")}"
+                 value="${escapeHtml(valorAtual !== undefined && valorAtual !== null ? String(valorAtual) : "")}"
                  placeholder="${modo === "editar" ? "deixe em branco para não alterar" : ""}">
-        </div>`).join("")}
+        </div>`;
+      }).join("")}
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="btn-cancelar-modal">Cancelar</button>
         <button type="submit" class="btn btn-primary">${modo === "editar" ? "Salvar alterações" : "Criar registro"}</button>
@@ -420,6 +472,7 @@
     const dados = {};
     info.cols.forEach((c) => {
       const campo = document.getElementById(`f-${c}`);
+      if (campo.dataset.binario === "1") return; // não reenviar valor binário/criptografado
       dados[c] = campo.value.trim();
     });
 
