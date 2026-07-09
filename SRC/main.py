@@ -263,6 +263,23 @@ def abrir_site():
         print("\nSite encerrado.")
 
 
+def abrir_site_html():
+    """Sobe o novo site HTML/CSS/JS (api_server.py, Flask) num processo separado."""
+    import subprocess
+    import sys as _sys
+    import webbrowser
+
+    print("\nAbrindo o site em http://localhost:5000 (Flask + HTML/CSS/JS)...")
+    print("Pra fechar o site, volte aqui e pressione Ctrl+C.\n")
+    try:
+        webbrowser.open("http://localhost:5000")
+        subprocess.run([_sys.executable, "api_server.py"])
+    except FileNotFoundError:
+        print("❌ Flask não encontrado. Rode: pip install -r requirements.txt")
+    except KeyboardInterrupt:
+        print("\nSite encerrado.")
+
+
 def rodar_analise():
     """Roda o pipeline de análise de dados (main_analise.py)."""
     try:
@@ -288,8 +305,9 @@ def menu_principal():
         print("############################################")
         print("  1. Menu CRUD (terminal)")
         print("  2. Abrir site (Streamlit)")
-        print("  3. Rodar análise de dados (gráficos + CSVs)")
-        print("  4. Enviar relatório por e-mail (CSV + PNG) ao supervisor")
+        print("  3. Abrir novo site (HTML/CSS/JS + Flask)")
+        print("  4. Rodar análise de dados (gráficos + CSVs)")
+        print("  5. Enviar relatório por e-mail (CSV + PNG) ao supervisor")
         print("  0. Sair")
         escolha = input("Escolha uma opção: ").strip()
 
@@ -301,9 +319,11 @@ def menu_principal():
         elif escolha == "2":
             abrir_site()
         elif escolha == "3":
+            abrir_site_html()
+        elif escolha == "4":
             rodar_analise()
             pausa()
-        elif escolha == "4":
+        elif escolha == "5":
             enviar_relatorio_por_email()
             pausa()
         else:
